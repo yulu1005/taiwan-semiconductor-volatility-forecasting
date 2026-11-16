@@ -1,0 +1,7 @@
+# 01_feasibility_analysis.py uses only the Python standard library.
+# Model training and model loading (05/06).
+joblib==1.6.0
+lightgbm==4.7.0
+numpy==2.5.5
+pandas==3.1.1
+scikit-learn==1.9.1
