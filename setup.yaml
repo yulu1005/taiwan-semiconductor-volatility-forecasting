@@ -1,0 +1,154 @@
+# setup.yaml — 第五組 交易設定
+#   v1：依期中簡報寫成，封存測試唯一一次正式執行時的設定（保留不動）
+#   v2：只換特徵組（17 項）與驗證期封存規則
+#   v3：依課程範本（ETF case study 01–07）與書面提案修正後的「理想策略」——只在驗證期評估，尚未回測
+setup_version: v3                       # 版本號
+
+universe:                                # 可交易範圍
+  stocks: ["2303","2330","2337","2340","2344","2371","2408","2434","2455","3016","3532","4919","5222","6770","8028"]  # 15 檔候選股票（目前名單，有事後選股限制）
+  gold_etf: "00635U"                     # 黃金期貨 ETF
+  passive_benchmark: "0050"              # 被動基準（台灣50，含息）
+  eligibility: "決策日 t 之前至少有 41 個有效交易日（20 日特徵 + 暖身）且 t 日有成交"  # 只用 t 日已知資訊判斷
+
+data:
+  source: "FinMind API（TWSE/TPEx 日成交資訊、除權息結果、減資參考價）"  # 資料供應商
+  start: "2015-06-01"                    # 下載起點（V7 2.2：暖機自 2015-06-01，臺灣漲跌幅 10% 新制起始日）
+  study_start: "2016-11-01"              # 研究樣本起點
+  study_end: "2026-11-01"                # 研究樣本終點（標籤結束日不得晚於此日）
+  close_time: "13:30 Asia/Taipei"        # 台股收盤時間
+  adjustment: "自行以除權息/減資參考價回溯調整（factor = 參考價 / 前一日收盤價）"  # 還原權值方式
+
+features:                                # 特徵組（models.feat_cols 依此讀取）
+  active: v7                             # 目前使用的版本：v1～v4、v7（v7＝依 V7 說明書：v4 的 18 項，第 18 項改為開盤到開盤 GARCH）
+  v1: ["hv5","hv10","hv20","ret1","ret5","ret20","hl","oc","ma5_dist","ma20_dist","vol_ratio","vol_cv","amt_ratio","rsi","atr_p"]  # 文件 15 項（20 日版）
+  v2: ["rv1","rv5","rv20","rv60","hl","park20","on20","semi_down20","maxabs20","ret20","garch_fc5","term5_60","vol_cv","amt_ratio","log_adv20","ma20_dist","holiday_gap"]  # notebooks/03b 依事先規則選出（rv20_rank 已依說明移除：橫斷面排名與 rv20 完全相同）
+  v2_screen: "notebooks/03b_feature_redesign：只用標籤在 2020 年底前結束的資料篩選；2021 只做比較"  # 篩選紀律
+  v3: ["rv1","rv5","rv20","rv60","hl","park20","on20","semi_down20","maxabs20","ret20","garch_fc5","term5_60","vol_cv","amt_ratio","log_adv20","ma20_dist","holiday_gap"]  # v3 = v2：新增候選大盤 HMM 依規則 4 未通過（控制 rv20 後偏相關 0.10，p=0.30），不納入
+  v4: ["rv20","NATR_14","rv60","hl","garch_fc5","Market_Correlation_20","log_adv20","rv5","Volatility_10","rv1","on20","term5_60","semi_down20","Return_5","vol_cv","Upside_Semivariance_20","ret20","ma20_dist"]  # src/05f：17 項 ∪ 組員 30 項（去重 40 項）只用 2016–2020 篩選；前 10 項通過增量檢定，後 8 項依增量強度補入
+  v7: ["rv20","NATR_14","rv60","hl","garch_oo5","Market_Correlation_20","log_adv20","rv5","Volatility_10","rv1","on20","term5_60","semi_down20","Return_5","vol_cv","Upside_Semivariance_20","ret20","ma20_dist"]  # V7 2.4：名單沿用 v4 的 18 項，不重新篩選；第 18 項依 V7 2.4.1 改為開盤到開盤 GARCH（src/03d）
+
+schedule:                                # 時間設定
+  decision_every_n_days: 5               # 每 5 個交易日收盤後決策
+  execution: "t+1 開盤"                  # 下一交易日開盤成交
+  holding: "t+1 開盤 → t+6 開盤"          # 持有 5 個交易日
+  lookback_days: 20                      # 特徵最長回看期
+  label_horizon_days: 5                  # 預測期間
+  label: "Y = sqrt(252/5 * sum_{k=1..5} ln(O[t+1+k]/O[t+k])^2)"  # 開盤到開盤實現波動率
+
+protocol:                                # 驗證協定
+  folds:                                 # 擴張視窗 walk-forward
+    - {train: ["2016-11-01","2021-12-31"], valid: ["2022-01-01","2022-12-31"]}
+    - {train: ["2016-11-01","2022-12-31"], valid: ["2023-01-01","2023-12-31"]}
+    - {train: ["2016-11-01","2023-12-31"], valid: ["2024-01-01","2024-12-31"]}
+  holdout: {train: ["2016-11-01","2024-12-31"], test: ["2025-01-01","2026-11-01"]}  # 封存測試，只跑一次
+  purge_days: 6                          # 訓練尾端剔除標籤尚未結束的樣本（t+6 開盤才結束）
+  tuning: "fixed folds; 以三個驗證年度平均 MAE 選參數，接近則選較簡單者"
+  seed: 42                               # 隨機種子，只為重現
+
+models:
+  baseline: "HV20：過去 20 日年化波動率"   # 非 ML 基準
+  ridge_alpha: [0.01, 0.1, 1, 10, 100, 1000, 10000]  # 包含簡報的 0.1/1/10，並依老師要求擴到 6 個數量級
+  lgbm_grid: {num_leaves: [7, 15], min_child_samples: [50, 100], n_estimators: [100, 300], learning_rate: 0.05, objective: "l1"}
+
+portfolio:                               # 分數轉交易
+  risk_tiers: {low: 0.70, mid: 0.50, high: 0.30}   # 股票總比例
+  tier_thresholds: "訓練期『每決策日合格股票平均實現波動』的第 33、67 百分位數"
+  gold_weight: 0.20                      # 黃金固定 20%
+  within_stock: ["equal", "inverse_vol"] # 股票部位內分配方式
+  per_name_cap: 0.20                     # 每檔最多占股票部位 20%（全組合最多 14%）
+  epsilon_vol: 0.05                      # 反波動率分母下限（年化 5%）
+  long_only: true                        # 只做多
+  leverage: false                        # 不借款
+
+execution:
+  capital_twd: 300000000                 # 本金 3 億元（簡報第 11 頁）；備註中的 100 萬另做敏感度
+  lot_size: 1000                         # 整張交易
+  adv_cap: 0.05                          # 單筆訂單不超過過去 20 日平均成交金額 5%
+  sell_then_buy: true                    # 先賣再買，現金不可為負
+  no_fill_rules: "無成交（停牌）不成交；開盤鎖漲停不買、鎖跌停不賣"
+
+costs:                                   # 成本類型
+  commission_per_side: 0.001425          # 手續費每邊 0.1425%
+  slippage_per_side: 0.0005              # 價差與滑價每邊 0.05%
+  sell_tax_stock: 0.003                  # 股票賣出證交稅 0.3%
+  sell_tax_etf: 0.001                    # ETF 賣出證交稅 0.1%
+  sensitivity_multipliers: [0, 0.5, 1, 1.5, 2, 3, 4]  # 手續費與滑價倍數（稅率不放大）
+
+risk:
+  kill_switch: {watch: 0.05, halve: 0.10, halt: 0.15, unwind: 0.20}  # 回撤階梯
+  cash_rate: 0.0                         # 現金報酬設為 0
+
+model_based:                             # 模型型特徵（notebooks/04；setup v1 補充，不改變既有設定）
+  garch: {p: 1, q: 1, dist: "normal", burnin_sessions: 250, refit_every: 63, freeze_at_holdout: true}  # 每檔 GARCH(1,1)：暖身 1 年、每季重估、封存期凍結參數
+
+# ===================== v3：理想策略（看任何 v3 結果之前寫定） =====================
+v3:
+  universe:                              # 範本 01：時點正確的股票池
+    liquidity_gate: {window_sessions: 250, min_valid_days: 200, floor_twd: 350000000}  # 過去 250 個交易日平均成交金額 ≥ 3.5 億、有效日 ≥ 200 才可交易
+    floor_rationale: "股票部位最高 70% × 3 億 ÷ 約 12 檔 ≈ 1,750 萬；單筆 ≤ 均額 5% → 一天建好部位需均額 ≥ 3.5 億"  # 門檻推導
+    train_on: "all_eligible"             # 模型用所有合格股票訓練（學波動）；只有交易與『可交易池』評估套用門檻
+  schedule:
+    decision_rule: "weekly_last_session" # 書面提案：每週最後一個交易日（通常週五）收盤後決策、下一交易日開盤成交
+  costs:
+    slippage_model: "tick"               # 範本 01 B.3：每邊滑價 = max(0.05%, 半個升降單位 ÷ 成交價)
+    tick_table_stock: [[10, 0.01], [50, 0.05], [100, 0.1], [500, 0.5], [1000, 1.0], [1.0e12, 5.0]]  # 股價上限 → 升降單位
+    tick_table_etf: [[50, 0.01], [1.0e12, 0.05]]  # ETF 升降單位
+  models:                                # 範本 06／07：完整族群
+    ridge_alpha: [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000, 100000, 1000000]  # 跨 10 個數量級
+    sparse_alpha_frac: [0.001, 0.003, 0.01, 0.03, 0.1, 0.3]  # Lasso／ElasticNet：每個 fold 的 alpha_max 的比例
+    enet_l1_ratio: 0.5                   # ElasticNet 的 L1 比例
+    lgbm: {objective: ["l2", "l1", "huber"], num_leaves: [7, 15, 31], min_child_samples: [50, 100], learning_rate: 0.05,
+           checkpoints: [50, 100, 200, 300, 500], huber_delta_frac: 0.5}  # 3 損失 × 3 容量 × 2 葉樣本；每個 checkpoint 算一次試驗
+    selection: "三個驗證年度平均 QLIKE 最低（低估波動罰得較重，配合 70/50/30 需要正確的水準）；差距 1% 內選較簡單者"  # 書面提案列 QLIKE
+    tie_break: "跨家族先比超參數個數（Ridge=Lasso=1 < ElasticNet=2 < LightGBM），再比家族內懲罰強度／葉數／樹數"  # 2026-11-17 補寫：第一次執行時 Lasso 與 ElasticNet QLIKE 同分，原文『較簡單』未定義跨家族比較；此補充只用驗證期資訊、不碰封存期
+    backtest_population: "各家族 QLIKE 最佳者 + HV20；最終策略在回測階段依驗證期回測 Sharpe 選（範本 14_backtest）"  # 回測尚未執行
+  portfolio:                             # 書面提案的兩層配置
+    within_stock: "inverse_vol"          # 第一層：反波動率權重
+    per_name_cap: 0.20                   # 單檔 ≤ 股票資金 20%
+    cap_overflow: "redistribute"         # 超過上限的部分依反波動率分給其他未達上限的股票；不足 5 檔放不滿時留現金
+    risk_tiers: {low: [0.70, 0.15], mid: [0.50, 0.20], high: [0.30, 0.20]}  # 股票、黃金（其餘現金）；書面提案 70/15/15、50/20/30、30/20/50
+    tier_rules:                          # 第二層：兩種規則都在驗證期以「風險等級命中率」比較（不交易）
+      ratio: {signal: "平均預測波動 ÷ 平均歷史 5 日波動", lo: 0.9, hi: 1.1}  # 書面提案 R_t
+      level: {signal: "平均預測波動 vs 訓練期每決策日平均實現波動", lo_pct: 33, hi_pct: 67}  # 期中簡報
+    tier_rule_choice: "驗證期『危險誤判率』（預測低風險但實際高風險）較低者；相同則命中率較高者"  # 事先寫定的選擇準則
+  model_based:
+    hmm: {market: "0050", n_states: 2, obs: ["log_return", "rv20"], burnin_sessions: 500, refit_every: 63, n_restarts: 5, freeze_at_holdout: true}  # 範本 04：大盤兩狀態 HMM（濾波機率）
+
+# ===================== Model 2（V1 架構）：2026-11-18 寫定，回測前凍結 =====================
+#   只用 2021 校準年決定目標波動（src/07a_model2_calibrate.py），未看 2022–2024 驗證期的任何配置結果
+model2:
+  assets: "15 檔股票（當週可交易者）＋ 現金；不含黃金"   # 投資範圍
+  risk_budget: {alpha: 0.0, rule: "b_i ∝ sigma_i^(-alpha)，加總 100%"}   # 主策略 α=0：每檔 1/n
+  covariance: {form: "Sigma = D R D", D: "Model 1 預測 σ̂（年化）", returns: "open_to_open",
+               corr_window: 60, corr_min_obs: 40, shrink: "ledoit_wolf_constant_correlation"}  # 60 日開盤到開盤報酬、收縮到平均相關
+  optimizer: {objective: "min Σ(RC_i/σ_p² − b_i)²", method: "SLSQP", long_only: true, budget: 1.0}  # 等風險（風險預算）最佳化
+  name_cap: 0.30                         # 單檔上限（以股票內部權重 q 表示；最終權重 a·q 也不會超過）
+  liquidity_cap: "c_i = min(0.30, adv_cap × ADV20_i ÷ capital)"   # 一筆訂單買得到（adv_cap 見 execution）
+  cap_shortfall: "Σc_i < 1 時 q_i = c_i/Σc_i，股票曝險上限降為 Σc_i"  # 流動性不足的週
+  target_vol: 0.16                       # 0.6 × 2021 每週 σ̂_p 中位數 26.9%，取到整數 %
+  target_vol_rule: "0.6 × median(σ̂_p, calib2021)；使平常曝險約 60%"
+  max_exposure: 1.0                      # 股票曝險上限（不借錢）
+  min_exposure: 0.0                      # 下限（可全部現金）
+  band: 0.01                             # 目標與現有權重差 < 1 個百分點不交易
+  cash_rate: 0.0                         # 現金報酬與 Sharpe 的無風險利率
+  drawdown_pause: 0.15                   # 組合回撤 15% 時暫停提高股票曝險
+  primary: "B"                           # 主策略（事先指定，不依結果更換）
+  strategies:                            # 比較組（A–D 為 V1 的 2×2）
+    A: {sigma: "hv20", alpha: 0.0, exposure: "target"}
+    B: {sigma: "model1", alpha: 0.0, exposure: "target"}
+    C: {sigma: "hv20", alpha: 1.0, exposure: "target"}
+    D: {sigma: "model1", alpha: 1.0, exposure: "target"}
+    E: {sigma: "garch", alpha: 0.0, exposure: "target"}
+    F: {sigma: "model1", alpha: 0.0, exposure: 0.60}
+    G: {sigma: "model1", alpha: 0.0, exposure: "target", band: 0.0}
+    H: {rule: "可交易股票等權、滿倉"}
+    I: {rule: "0050 買進持有"}
+  sensitivity:                           # 不換主策略，全部計入 Deflated Sharpe 試驗次數
+    alpha: [0.5, 2.0]
+    corr_window: [20]
+    shrink: [false]
+    name_cap: [0.15]
+    cost_mult: [1.5, 2.0]
+    adv_cap: [0.01]
+    cash_rate: [0.015]
+  bootstrap_block_weeks: 4               # Sharpe 差異的區塊重抽樣長度
