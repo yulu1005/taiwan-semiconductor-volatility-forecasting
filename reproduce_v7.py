@@ -26,6 +26,7 @@ STEPS = (
     "14_export_predictions.py",
     "12_correlation_checks.py",
     "15_build_dashboard.py",
+    "19_build_research_dashboard.py",
 )
 RAW_FILES = (
     "price.parquet", "div.parquet", "capred.parquet",
@@ -81,7 +82,8 @@ def main():
                                     stdout=log, stderr=subprocess.STDOUT)
         if result.returncode:
             sys.exit(f"{step} failed with exit code {result.returncode}. See {log_path}")
-    print(f"Dashboard: {run_dir / 'outputs/v7/dashboard/dashboard.html'}")
+    print(f"Research dashboard: {run_dir / 'outputs/v7/dashboard/research_dashboard_preview.html'}")
+    print(f"Historical dashboard: {run_dir / 'outputs/v7/dashboard/dashboard.html'}")
     print(f"PIT check: {run_dir / 'outputs/v7/tables/pit/pit_summary.csv'}")
 
 

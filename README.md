@@ -8,13 +8,13 @@
 
 ### 查看現有儀表板
 
-執行 V7 後，在該次執行的資料夾中開啟 `outputs/v7/dashboard/dashboard.html`。PowerShell 可用 `Invoke-Item` 開啟，例如：
+執行 V7 後，在該次執行的資料夾中開啟 `outputs/v7/dashboard/research_dashboard_preview.html`。PowerShell 可用 `Invoke-Item` 開啟：
 
 ```powershell
-Invoke-Item ".\outputs\v7\dashboard\dashboard.html"
+Invoke-Item ".\outputs\v7\dashboard\research_dashboard_preview.html"
 ```
 
-這是可直接用瀏覽器開啟的歷史報表。內容包括個股波動率預測、A–D 回測、18 項特徵篩選摘要、20／60 日窗口比較與 PIT 檢查。
+四頁式儀表板包含資產配置總覽、波動率預測、策略配置與績效，以及研究驗證與診斷。首頁的日期選單使用 2025–2026 事後回測的決策日。原版歷史報表仍可從 `outputs/v7/dashboard/dashboard.html` 開啟。兩份 HTML 皆內嵌資料，可直接用瀏覽器查看。
 
 ### 下載資料並在本機重跑
 
@@ -74,6 +74,7 @@ python src/11_figures_v7.py            # 九張圖
 python src/14_export_predictions.py    # 每週每檔的預測波動率整理成 CSV（outputs/v7/tables/volatility_predictions_weekly.csv）
 python src/12_correlation_checks.py    # 特徵相關、每週相關矩陣檢查與權重穩定性
 python src/15_build_dashboard.py       # 產生可用瀏覽器開啟的 HTML 儀表板
+python src/19_build_research_dashboard.py # 用同一次 V7 輸出產生四頁式儀表板
 ```
 
 上述步驟使用已下載至 `data/raw/` 的資料快照。更新資料時可參閱上方的下載步驟，用 `data/raw/manifest.json` 核對資料版本。
