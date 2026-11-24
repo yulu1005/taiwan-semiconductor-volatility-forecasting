@@ -1,0 +1,16 @@
+﻿level_0,level_1,rho,abs
+NATR_14,rv60,0.898,0.898
+rv20,NATR_14,0.883,0.883
+rv20,Upside_Semivariance_20,0.868,0.868
+rv20,Volatility_10,0.853,0.853
+ret20,ma20_dist,0.828,0.828
+rv5,Volatility_10,0.815,0.815
+NATR_14,semi_down20,0.811,0.811
+rv20,rv60,0.801,0.801
+rv20,semi_down20,0.794,0.794
+rv5,term5_60,0.791,0.791
+NATR_14,Volatility_10,0.787,0.787
+NATR_14,garch_oo5,0.786,0.786
+Volatility_10,Upside_Semivariance_20,0.746,0.746
+rv60,garch_oo5,0.735,0.735
+rv20,garch_oo5,0.713,0.713

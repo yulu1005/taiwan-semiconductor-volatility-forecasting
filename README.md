@@ -8,7 +8,7 @@
 
 ### 查看現有儀表板
 
-執行 V7 後，在該次執行的資料夾中開啟 `outputs/v7/dashboard/research_dashboard_preview.html`。PowerShell 可用 `Invoke-Item` 開啟：
+專案已附一份完成的四頁式儀表板。在專案根目錄用 PowerShell 開啟：
 
 ```powershell
 Invoke-Item ".\outputs\v7\dashboard\research_dashboard_preview.html"
@@ -16,7 +16,7 @@ Invoke-Item ".\outputs\v7\dashboard\research_dashboard_preview.html"
 
 四頁式儀表板包含資產配置總覽、波動率預測、策略配置與績效，以及研究驗證與診斷。首頁的日期選單使用 2025–2026 事後回測的決策日。原版歷史報表仍可從 `outputs/v7/dashboard/dashboard.html` 開啟。兩份 HTML 皆內嵌資料，可直接用瀏覽器查看。
 
-### 下載資料並在本機重跑
+### 使用隨附資料在本機重跑
 
 使用 Python 3.12，在包含 `setup.yaml` 的資料夾開啟 PowerShell，依序執行：
 
@@ -24,12 +24,12 @@ Invoke-Item ".\outputs\v7\dashboard\research_dashboard_preview.html"
 python -m venv .venv
 $python = ".\.venv\Scripts\python.exe"
 & $python -m pip install -r requirements.txt
-& $python src/01_download.py
-& $python src/01b_listing.py
 & $python reproduce_v7.py --use-current-python
 ```
 
-前兩支資料腳本需要連線至 FinMind 和證交所。若手上已有同一版本的原始資料快照，可將它放入 `data/raw/` 再直接重跑。每次執行會在 `reproductions/` 建立帶時間戳的獨立資料夾。完成後開啟該次產出的儀表板，各步驟的日誌也會保留在該資料夾。
+重跑會讀取 `data/raw/` 隨附的 FinMind 快照，並在 `reproductions/` 建立帶時間戳的獨立資料夾。完成後可開啟該次產出的儀表板，各步驟的日誌也會保留在該資料夾。若需要更新行情，先在另一份工作副本執行 `src/01_download.py` 與 `src/01b_listing.py`，這兩步需要連線至 FinMind 和證交所。
+
+專案也附有 `data/processed/` 的處理後資料、`outputs/v7/` 的回測表格與圖表、研究帳本和根目錄的研究計畫書 PDF。`outputs/v7/paper/freeze.json` 保留前瞻規則的凍結紀錄，尚無獨立前瞻績效。
 
 若你的 Python 已裝好 `requirements.txt` 的套件，可加上 `--use-current-python`。若只想確認輸入檔案能成功複製，可加上 `--prepare-only`。
 
@@ -93,7 +93,7 @@ V7 回測中涉及缺值、例外週、停牌與模型重訓頻率的實作決�
 
 ## 舊版研究紀錄
 
-以下列出早期版本和原研究工作區的歷史輸出位置。GitHub checkout 包含程式來源。重現 V7 請使用上方步驟。
+以下列出早期版本及其歷史輸出位置。重現 V7 請使用上方步驟。
 
 | 版本 | 特徵 | 驗證期 | 封存期 | 結果位置 |
 |---|---|---|---|---|

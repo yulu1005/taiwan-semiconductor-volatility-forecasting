@@ -1,0 +1,8 @@
+,config
+ridge,ridge_alpha10000
+lasso,lasso_alpha_frac0.1
+enet,enet_alpha_frac0.1
+lgbm_l2,lgbm_l2_L7_m100_t50
+lgbm_l1,lgbm_l1_L7_m100_t50
+lgbm_huber,lgbm_huber_L7_m100_t50
+primary,lasso_alpha_frac0.1

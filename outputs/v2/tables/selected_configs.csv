@@ -1,0 +1,7 @@
+,config
+ridge,ridge_alpha1000
+lgbm,lgbm_num_leaves7_min_child_samples100_n_estimators100
+ridge_hv3,ridge_alpha1000
+lgbm_hv3,lgbm_num_leaves7_min_child_samples100_n_estimators100
+ridge_v1,ridge_alpha1000
+lgbm_v1,lgbm_num_leaves7_min_child_samples100_n_estimators100

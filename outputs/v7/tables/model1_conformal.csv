@@ -1,0 +1,5 @@
+period,coverage,n,median_width
+fold1,0.9281,570,0.6785
+fold2,0.865,452,0.5532
+fold3,0.879,438,0.5988
+posthoc2025,0.894,896,0.886

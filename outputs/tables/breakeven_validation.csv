@@ -1,0 +1,4 @@
+strategy,gross_CAGR,turnover_2way,breakeven_bp_per_leg,assumed_bp_per_leg_incl_tax_avg,gross_Sharpe,net_Sharpe
+EW100_股票等權,-0.0664,1.9698,-337.3075,34.25,-0.173,-0.2002
+HV_dyn_EW,0.0055,2.5713,21.5259,34.25,0.1075,0.0434
+LGBM_dyn_EW,-0.0249,2.9882,-83.2224,34.25,-0.1051,-0.171

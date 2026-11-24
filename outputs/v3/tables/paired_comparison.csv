@@ -1,0 +1,5 @@
+from,to,metric,diff,lo95,hi95,improves
+hv,lasso_alpha_frac0.1,qlike,-0.1005,-0.1359,-0.065,True
+hv,lasso_alpha_frac0.1,mae,-0.0058,-0.0106,-0.0009,True
+lgbm_l1_L15_m50_t50,lasso_alpha_frac0.1,qlike,-0.0465,-0.0788,-0.0142,True
+lgbm_l1_L15_m50_t50,lasso_alpha_frac0.1,mae,0.0063,0.002,0.0105,False

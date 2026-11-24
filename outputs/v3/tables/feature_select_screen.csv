@@ -1,0 +1,41 @@
+feature,from,ic,p,sign_ok,inc_ic,inc_t,inc_p,bh,level,pass_R1R2,pass_R3,note,selected,selected_std
+rv20,17項,0.4215,0.0,True,,inf,0.0,True,個股,True,True,,True,True
+NATR_14,30項,0.4809,0.0,True,0.2409,9.6168,0.0,True,個股,True,True,,True,True
+rv60,17項,0.4452,0.0,True,0.1989,7.4042,0.0,True,個股,True,True,,True,True
+hl,17項,0.3622,0.0,True,0.1518,7.0991,0.0,True,個股,True,True,,True,True
+garch_fc5,17項,0.386,0.0,True,0.1738,6.2136,0.0,True,個股,True,True,,True,True
+rv5,17項,0.3341,0.0,True,0.0892,4.2385,0.0,True,個股,True,True,,True,True
+Volatility_10,30項,0.3919,0.0,True,0.0774,3.411,0.0006,True,個股,True,True,,True,True
+rv1,17項,0.1804,0.0,True,0.0646,3.2404,0.0012,True,個股,True,True,,True,True
+log_adv20,17項,-0.0997,0.0,True,-0.1163,-5.1884,0.0,True,個股,True,True,,True,True
+Market_Correlation_20,30項,-0.2542,0.0,True,-0.1232,-5.7054,0.0,True,個股,True,True,,True,True
+on20,17項,0.3059,0.0,True,0.0475,1.6894,0.0912,True,個股,True,False,,False,True
+semi_down20,17項,0.3333,0.0,True,0.0382,1.2997,0.1937,True,個股,True,False,,False,True
+Return_5,30項,0.0628,0.0129,True,0.0309,1.2334,0.2174,True,個股,True,False,,False,True
+vol_cv,17項,0.1464,0.0,True,0.0309,1.2141,0.2247,True,個股,True,False,,False,True
+Upside_Semivariance_20,30項,0.3779,0.0,True,0.0193,0.8761,0.381,True,個股,True,False,,False,True
+ma20_dist,17項,0.0779,0.0308,True,0.0083,0.3202,0.7488,True,個股,True,False,,False,True
+ret20,17項,0.0816,0.0289,True,-0.0216,-0.859,0.3904,True,個股,True,False,,False,True
+term5_60,17項,0.0709,0.0005,True,-0.0291,-1.3635,0.1727,True,個股,True,False,,False,True
+park20,17項,0.4768,0.0,True,0.2307,8.9323,0.0,True,個股,True,True,與 NATR_14 重複,False,False
+EWMA_Volatility_20,30項,0.4531,0.0,True,0.1639,6.3559,0.0,True,個股,True,True,與 rv20 重複,False,False
+Idiosyncratic_Volatility_20,30項,0.4266,0.0,True,0.1008,5.4886,0.0,True,個股,True,True,與 rv20 重複,False,False
+Idiosyncratic_Volatility_Ratio,30項,0.2302,0.0,True,0.1039,4.991,0.0,True,個股,True,True,與 Market_Correlation_20 重複,False,False
+Volatility_Ratio_5_20,30項,0.0297,0.1368,False,0.0515,2.3918,0.0168,False,個股,False,False,,False,False
+Stock_Volatility_Shock,30項,0.0149,0.4286,False,0.0461,2.3536,0.0186,False,個股,False,False,,False,False
+Market_Volatility_Ratio_5_20,30項,,0.0624,True,0.0698,1.8632,0.0624,False,市場,False,False,,False,False
+Volume_Ratio_20,30項,0.0327,0.1718,False,0.0372,1.6649,0.0959,False,個股,False,False,,False,False
+amt_ratio,17項,0.0324,0.1948,False,0.0308,1.3495,0.1772,False,個股,False,False,,False,False
+holiday_gap,17項,,0.3255,True,0.0094,0.9832,0.3255,False,市場,False,False,,False,False
+Negative_Return_Ratio_20,30項,0.0117,0.6478,False,0.0218,0.9358,0.3494,False,個股,False,False,,False,False
+Volatility_5_10_Ratio,30項,0.0167,0.3155,False,0.0177,0.9257,0.3546,False,個股,False,False,,False,False
+Return_1,30項,0.0245,0.2859,True,0.0166,0.7453,0.4561,False,個股,False,False,,False,False
+Market_Volatility_20,30項,,0.9992,True,0.0002,0.001,0.9992,False,市場,False,False,,False,False
+Close_Open_Range,30項,-0.0281,0.2217,True,-0.0131,-0.6244,0.5324,False,個股,False,False,,False,False
+maxabs20,17項,0.3647,0.0,True,-0.0174,-0.7531,0.4514,True,個股,True,False,,False,False
+Volatility_of_Volatility_20,30項,0.0363,0.2613,False,-0.0319,-1.2506,0.2111,False,個股,False,False,,False,False
+Market_Return_5,30項,,0.0665,True,-1.2854,-1.8348,0.0665,False,市場,False,False,,False,False
+Systematic_Volatility_20,30項,0.0465,0.0455,False,-0.0777,-3.6627,0.0002,False,個股,False,False,,False,False
+Market_Beta_20,30項,-0.013,0.658,False,-0.1,-4.5131,0.0,False,個股,False,False,,False,False
+Relative_Volatility_20,30項,0.4215,0.0,True,,,,True,個股,True,False,,False,False
+Cross_Sectional_Volatility_Rank,30項,0.4215,0.0,True,,,,True,個股,True,False,,False,False
