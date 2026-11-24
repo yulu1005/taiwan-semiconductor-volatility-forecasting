@@ -1,0 +1,7 @@
+from,to,dMAE,dMAE_lo,dMAE_hi,dIC,dIC_lo,dIC_hi,MAE_improves,IC_improves
+train_mean,hv,-0.03,-0.0418,-0.0181,,,,True,False
+hv,ridge,-0.0038,-0.0081,0.0004,0.0493,0.0286,0.0701,False,True
+ridge,lgbm,-0.0083,-0.0123,-0.0043,0.0051,-0.0095,0.0196,True,False
+hv,lgbm,-0.0122,-0.0172,-0.0071,0.0544,0.029,0.0798,True,True
+ridge_hv3,ridge,-0.0025,-0.0042,-0.0009,0.0334,0.0141,0.0526,True,True
+lgbm_hv3,lgbm,-0.0017,-0.0038,0.0003,0.0274,0.0048,0.05,False,True

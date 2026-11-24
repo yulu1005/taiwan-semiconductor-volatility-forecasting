@@ -1,0 +1,5 @@
+baseline,diff,lo95,hi95,ci_excludes_0,stocks_primary_better,stocks,years_primary_better
+hv,-0.0995,-0.1343,-0.0646,True,13,13,3
+ewma,-0.0353,-0.0578,-0.0128,True,11,13,3
+garch,-0.05,-0.067,-0.0329,True,10,13,3
+har,-0.0212,-0.0283,-0.014,True,13,13,3

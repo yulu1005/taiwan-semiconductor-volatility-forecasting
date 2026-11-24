@@ -1,0 +1,8 @@
+A,B,dSharpe,lo95,hi95
+LGBM_dyn_EW,HV_dyn_EW,-0.018,-0.396,0.32
+LGBM_dyn_EW,Fixed_50-20-30,-0.021,-0.481,0.388
+LGBM_dyn_EW,EW100_股票等權,-0.084,-0.701,0.51
+LGBM_dyn_EW,Passive_0050,0.046,-0.867,1.117
+HV_dyn_EW,Fixed_50-20-30,-0.003,-0.343,0.285
+LGBM_dyn_EW,LGBM_dyn_IV,0.15,0.004,0.311
+LGBM_dyn_EW,LGBM_dyn_EW_noGold,-0.082,-0.612,0.381

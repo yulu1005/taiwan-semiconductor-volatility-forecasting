@@ -1,0 +1,8 @@
+﻿feature,duplicate_of,rho
+Volatility_5,rv5,1.0
+Volatility_20,rv20,1.0
+Return_20,ret20,1.0
+Downside_Semivariance_20,semi_down20,1.0
+Max_Absolute_Return_20,maxabs20,1.0
+Parkinson_Volatility_20,park20,1.0
+VolumeCV_20,vol_cv,1.0

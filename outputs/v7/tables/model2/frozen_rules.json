@@ -1,0 +1,11 @@
+{
+  "window": 20,
+  "sigma_target": 0.2093531814030271,
+  "alpha": 0.0,
+  "sens_targets": {
+    "p25": 0.17160809304747843,
+    "p75": 0.26524095127907865,
+    "ew_hist": 0.2522463518683966
+  },
+  "primary_model": "lasso_alpha_frac0.1"
+}
