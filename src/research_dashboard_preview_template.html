@@ -1,0 +1,193 @@
+<style>
+:root{--shell:#112a4e;--shell-muted:#bfd2ee;--stock:#1b5ad0;--cash:#008871}
+.research-nav{position:fixed;inset:0 auto 0 0;width:224px;background:var(--shell);color:white;padding:28px 14px;z-index:10}
+.research-nav strong{display:block;font-size:20px;padding:0 10px 20px}.research-nav button{display:block;width:100%;border:0;border-radius:8px;background:none;color:var(--shell-muted);font:inherit;padding:12px 10px;text-align:left;cursor:pointer}
+.research-nav button[aria-current="page"]{background:#245ed1;color:white}.research-nav button:focus-visible,select:focus-visible{outline:2px solid #ad85ff;outline-offset:2px}
+.wrap{max-width:none!important;margin-left:224px!important;width:auto!important;padding:24px!important}.wrap>.top{display:none}
+[hidden]{display:none!important}.page-title{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:15px}
+.research-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.research-grid>*{min-width:0}.overview-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.overview-metrics strong{display:block;margin:5px 0;font-size:clamp(15px,1.7vw,25px);font-variant-numeric:tabular-nums}
+.overview-metrics span,.explain{color:var(--muted);font-size:13px}.status-good{color:var(--cash)}.status-risk{color:#a6263c}
+.mix-view{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:20px;padding:12px 0}
+.mix-ring{width:165px;height:165px;border-radius:50%;display:grid;place-items:center;flex:none}
+.mix-ring strong{display:grid;place-items:center;text-align:center;background:var(--panel,#fff);color:var(--ink);border-radius:50%;width:116px;height:116px;padding:6px;font-size:13px}
+.research-table{overflow:auto}.assets-table{max-height:280px}.assets-table thead th{position:sticky;top:0;z-index:1;background:var(--chip)}.assets-table tfoot th{position:sticky;bottom:0;background:var(--chip)}
+.bars-scroll{overflow:auto}.alloc-axis{display:flex;gap:6px;margin:17px 0 0;align-items:stretch;min-width:270px}
+.axis-scale{width:34px;height:158px;display:flex;flex-direction:column;justify-content:space-between;text-align:right;color:var(--muted);font-size:10px}
+.alloc-groups{display:flex;flex:1;align-items:end;gap:9px}.alloc-group{min-width:0;flex:1;text-align:center;font-size:10px}
+.alloc-plot{height:155px;background:repeating-linear-gradient(to top,transparent 0,transparent 38px,var(--line) 38px,var(--line) 39px);display:flex;align-items:end;justify-content:center;gap:3px}
+.allocation-stack{display:flex;flex-direction:column-reverse;height:100%;width:60%;min-width:23px;outline-offset:2px}.allocation-stack.current{outline:2px solid var(--stock)}
+.bar-a,.bar-b{width:40%;max-width:15px}.bar-a{background:#8392aa}.bar-b{background:var(--stock)}
+.segments-key{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.segments-key button{display:flex;align-items:center;gap:5px;font:inherit;font-size:11px;border:1px solid var(--line);border-radius:6px;background:var(--chip);color:var(--ink);padding:3px 6px;cursor:pointer}
+.segments-key button[aria-pressed="true"]{outline:2px solid var(--stock)}.segments-key i{width:8px;height:8px;border-radius:2px}.alloc-plot [title]{cursor:help}
+.period-pick{margin:8px 0 12px}.wide{margin-top:14px}
+@media(max-width:1050px){.research-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.research-nav{position:static;width:auto;display:flex;flex-wrap:wrap;padding:8px}.research-nav strong{width:100%;padding:4px}.research-nav button{width:auto;padding:7px}.wrap{margin-left:0!important;padding:12px!important}.overview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<!-- PANEL -->
+<nav class="research-nav" aria-label="主要頁面">
+  <strong>V7 配置研究</strong>
+  <button type="button" data-page="overview" aria-current="page">資產配置總覽</button>
+  <button type="button" data-page="model1">波動率預測</button>
+  <button type="button" data-page="model2">策略配置與績效</button>
+  <button type="button" data-page="validation">研究驗證與診斷</button>
+</nav>
+<main>
+  <section data-view="overview">
+    <header class="page-title"><div><h1>資產配置總覽</h1><p class="sub">2025–2026 事後評估 · 策略 B（Lasso）</p></div>
+      <label>決策日 <select id="overview-date"></select></label></header>
+    <div class="overview-metrics" id="overview-metrics" aria-live="polite"></div>
+    <div class="research-grid">
+      <section class="panel"><h3>股票與現金配置</h3><div id="overview-ring"></div><p class="explain" id="execution-date"></p></section>
+      <section class="panel"><h3>15 檔個股配置明細</h3><div class="research-table assets-table" id="overview-assets"></div>
+        <p class="explain">金額按成交日調整前總資產及目標權重計算；當週未配置的股票權重為 0。</p></section>
+      <section class="panel"><h3>最近五次個股配置</h3><p class="explain">點選圖例可突出單一資產，保留各期 100% 的基準。</p>
+        <div class="bars-scroll" id="overview-history"></div><div class="segments-key" id="overview-legend"></div></section>
+      <section class="panel"><h3>同日 A／B 配置比較</h3><p class="explain">灰色 A · HV20　藍色 B · Lasso</p><div class="bars-scroll" id="overview-comparison"></div></section>
+    </div>
+  </section>
+  <section data-view="model1" hidden>
+    <!-- MODEL1 -->
+    <section class="panel wide"><h3>Lasso 與 HV20 預測誤差</h3>
+      <label>評估期間 <select id="m1-period"><option value="val">2022–2024 驗證</option><option value="post">2025–2026 事後評估</option></select></label>
+      <div class="research-table" id="m1-metrics"></div><p class="explain">整體 IC 為週內跨股 Spearman 相關，逐股表的 Spearman 為各股跨日期的排名相關。</p>
+      <div class="research-table assets-table" id="m1-stocks"></div></section>
+    <section class="panel wide"><h3>特徵篩選與 Lasso 係數</h3>
+      <p class="explain">係數來自訓練至 2024 年底的事後評估模型。係數為零表示該次模型未使用該特徵，係數大小只描述模型關係。</p>
+      <div class="research-table assets-table" id="m1-features"></div></section>
+  </section>
+  <section data-view="model2" hidden>
+    <h1>策略配置與績效</h1>
+    <div class="seg period-pick" role="group" aria-label="回測期間">
+      <button type="button" id="review-val" data-p="val">2022–2024 驗證</button>
+      <button type="button" id="review-post" data-p="post">2025–2026 事後評估</button></div>
+    <section class="panel"><h3>A–D 策略績效</h3><div class="research-table" id="m2-metrics"></div></section>
+    <!-- MODEL2 -->
+    <section class="panel wide"><h3>整段期間的股票與現金配置</h3>
+      <p class="explain">藍色區域是股票，其餘是現金，依下方所選策略同步更新。</p><div class="chart" id="m2-cash-mix"></div></section>
+    <section class="panel wide"><h3>目標、預測與已實現波動率</h3>
+      <label>策略 <select id="m2-risk-strategy"><option>A</option><option selected>B</option><option>C</option><option>D</option></select></label>
+      <div class="legend"><span style="color:#64748b">目標</span><span style="color:#b73d52">純股票預測</span><span style="color:#2563eb">配置後預測</span><span style="color:#008871">截至成交日收盤已實現</span></div>
+      <div class="chart" id="m2-risk"></div><p class="explain">實際波動率由截至成交日收盤的最近五筆淨值對數報酬年化，供事後風險診斷。</p>
+      <div class="research-table" id="m2-target-attainment"></div></section>
+  </section>
+  <section data-view="validation" hidden>
+    <!-- VALIDATION -->
+    <section class="panel wide"><h3>驗證期 Lasso 相對基準的 QLIKE 差異</h3><div class="research-table" id="validation-baselines"></div></section>
+    <section class="panel wide"><h3>0050 急跌週的組合波動預測</h3><p class="explain">0050 用於定義急跌情境。</p><div class="research-table" id="validation-crash"></div></section>
+    <section class="panel wide"><h3>事後評估窗口比較</h3><div class="research-table" id="validation-post"></div>
+      <p class="explain">其他分市場風險情境的個股誤差、現金配置的獨立因果效果及前瞻結果尚未提供。</p></section>
+  </section>
+</main>
+<!-- SCRIPT -->
+<script>
+(() => {
+const research = /*__RESEARCH__*/null;
+const el = id => document.getElementById(id);
+const names = [...research.codes.map(code=>research.names[code]||code),"現金"];
+const ids = [...research.codes,"現金"];
+const asset = i => i===ids.length-1 ? "現金" : `${names[i]} (${ids[i]})`;
+const colors = ["#1556b0","#824db5","#08749a","#b64174","#6d5ab9","#546e38","#b55a27","#3665d3","#896020","#4e3e81","#2a7594","#953d49","#816192","#697e32","#505f76","#008871"];
+const perc = x => Number.isFinite(x) ? (x*100).toFixed(2)+"%" : "—";
+const fmt = x => Number.isFinite(x) ? x.toFixed(4) : "—";
+const money = x => Number.isFinite(x) ? "NT$ "+Math.round(x).toLocaleString("zh-TW") : "—";
+const point = x => x==null?"—": (Math.abs(x)<1e-9?"":x>0?"↑ +":"↓ −")+(Math.abs(x)*100).toFixed(2)+" pp";
+const esc = x => String(x??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function table(head,rows,foot=[]) {
+ return "<table><thead><tr>"+head.map(x=>"<th>"+esc(x)+"</th>").join("")+"</tr></thead><tbody>"+
+ rows.map(r=>"<tr>"+r.map(x=>"<td>"+esc(x)+"</td>").join("")+"</tr>").join("")+"</tbody>"+
+ (foot.length?"<tfoot><tr>"+foot.map(x=>"<th>"+esc(x)+"</th>").join("")+"</tr></tfoot>":"")+"</table>";
+}
+const select = el("overview-date");
+select.innerHTML = research.overview.map((row,i)=>`<option value="${i}">${row.date}</option>`).join("");
+select.value = research.overview.length-1;
+let focusAsset = -1;
+function overview() {
+ const i=Number(select.value), week=research.overview[i], b=week.B, previous=research.overview[i-1]?.B;
+ const equity=b.exposure, cash=b.weights.at(-1), finalVol=equity*b.stockVol;
+ const valid=Number.isFinite(finalVol)&&Number.isFinite(research.target), pass=valid&&finalVol<=research.target+1e-9;
+ const status=valid?(pass?"符合目標":"超出目標"):"資料不足";
+ el("overview-metrics").innerHTML=[["投資組合總資產",money(b.nav)],["目標年化波動率",perc(research.target)],["純股票組合預測波動率",perc(b.stockVol)],["配置後預測波動率",perc(finalVol)]].map(([label,value],j)=>`<div class="panel"><span>${label}</span><strong>${value}</strong>${j===3?`<b class="${valid?(pass?"status-good":"status-risk"):""}">${status}</b>`:""}</div>`).join("");
+ el("overview-ring").innerHTML=`<div class="mix-view"><div class="mix-ring" style="background:conic-gradient(var(--stock) ${equity*100}%,var(--cash) 0)"><strong>${money(b.nav)}</strong></div><div><p>股票 ${perc(equity)} · ${money(b.nav*equity)}</p><p>現金 ${perc(cash)} · ${money(b.nav*cash)}</p></div></div>`;
+ el("execution-date").textContent=`決策日 ${week.date} · 成交日 ${b.exec} · 資產為成交日開盤調整前數額，含此前的回測損益與成本。`;
+ el("overview-assets").innerHTML=table(["名稱","代號","Lasso 預測波動率","股票內部權重","最終權重","配置金額","較上期"],
+  ids.map((id,j)=>[names[j],j===ids.length-1?"—":id,perc(b.vols[j]),perc(b.inner[j]),perc(b.weights[j]),money(b.nav*b.weights[j]),point(previous?b.weights[j]-previous.weights[j]:null)]),
+  ["合計","—","—","—",perc(b.weights.reduce((a,v)=>a+v,0)),money(b.nav),"—"]);
+ const scale='<div class="axis-scale"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div>';
+ const history=research.overview.slice(Math.max(0,i-4),i+1);
+ el("overview-history").innerHTML='<div class="alloc-axis">'+scale+'<div class="alloc-groups">'+history.map(row=>
+  `<div class="alloc-group"><div class="alloc-plot"><div class="allocation-stack ${row.date===week.date?'current':''}">`+
+  row.B.weights.map((w,j)=>`<div title="${esc(asset(j))} ${perc(w)} · ${money(w*row.B.nav)}" style="height:${w*100}%;background:${colors[j]};opacity:${focusAsset<0||focusAsset===j?1:.22}"></div>`).join("")+`</div></div>${row.date.slice(5)}</div>`).join("")+'</div></div>';
+ const max=Math.ceil(Math.max(...week.A.weights,...b.weights)*10)/10||.1;
+ el("overview-comparison").innerHTML=`<div class="alloc-axis" style="min-width:570px"><div class="axis-scale"><span>${perc(max)}</span><span>0%</span></div><div class="alloc-groups">`+
+  ids.map((id,j)=>{const a=week.A.weights[j],v=b.weights[j],title=esc(`${asset(j)} · A ${perc(a)} · B ${perc(v)} · B−A ${point(v-a)}`);
+    return `<div class="alloc-group"><div class="alloc-plot" title="${title}"><div class="bar-a" style="height:${a/max*100}%"></div><div class="bar-b" style="height:${v/max*100}%"></div></div>${esc(id)}</div>`;}).join("")+"</div></div>";
+ el("overview-legend").innerHTML=ids.map((_,j)=>`<button type="button" data-asset="${j}" aria-pressed="${j===focusAsset}" title="${esc(asset(j))}"><i style="background:${colors[j]}"></i>${esc(ids[j])}</button>`).join("");
+}
+function m1(){
+ const k=el("m1-period").value, rows=research.m1[k], fields=["MAE","RMSE","QLIKE","IC"];
+ el("m1-metrics").innerHTML=table(["模型",...fields],[...rows.map(r=>[r.model,...fields.map(f=>fmt(r[f]))]),["Lasso − HV20",...fields.map(f=>fmt(rows[0][f]-rows[1][f]))]]);
+ el("m1-stocks").innerHTML=table(["股票","模型","共同樣本數","MAE","RMSE","QLIKE","Spearman"], research.byStock[k].map(r=>[r.sid,r.model,r.n,fmt(r.mae),fmt(r.rmse),fmt(r.qlike),fmt(r.spearman)]));
+ const decisions={tier_1_anchor:"第一層 · HV20 錨點",tier_1:"第一層",tier_2:"第二層",failed_screen:"未通過篩選",eligible:"未入選"};
+ el("m1-features").innerHTML=table(["候選特徵","篩選結果","BH q","增量 p","標準化 Lasso 係數","模型使用"],research.featureScreen.map(r=>{
+  const w=research.coefficients[r.feature];
+  return [r.feature,decisions[r.decision]??r.decision,fmt(r.bh_q),fmt(r.inc_p),w===undefined?"—":w.toFixed(6),w===undefined?"未入選":w===0?"係數為零":"使用"];
+ }));
+}
+function m2(){
+ const data=research.m2[P], rows=data.rows, strategy=el("m2-risk-strategy").value, risk=data.risk[strategy];
+ el("m2-metrics").innerHTML=table(["策略","期末總資產","累積報酬","年化報酬","年化波動","Sharpe","最大回撤","交易成本","年化換手率"],
+  rows.map(r=>[r.策略,money(r.final),perc(r.cumulative),perc(r.年化報酬),perc(r.年化波動),fmt(r.Sharpe),perc(r.最大回撤),money(r.total_cost),perc(r.年化換手率)]));
+ const strategies=["A","B","C","D"], shades=["#708098","#2563eb","#a64e76","#008871"];
+ const dates=data.nav.A.map(d=>d.date.slice(0,10));
+ const navSeries=strategies.map((s,i)=>({name:s,color:shades[i],dash:s==="C"||s==="D",values:data.nav[s].map(r=>r.nav)}));
+ lineChart(el("ch-nav"),{label:"A–D 淨值",x:dates,yFmt:(v,focus)=>focus?money(v):Math.round(v/1e6)+" 百萬",series:navSeries});
+ el("nav-note").textContent="A／B 為實線，C／D 為虛線。當 α = 0，A 與 C、B 與 D 會各自重疊。四組起始資金皆為 3 億元。";
+ lineChart(el("ch-dd"),{label:"A–D 回撤",x:dates,yMax:0,yFmt:perc,series:navSeries.map(r=>{
+  let peak=300_000_000;
+  return {...r,values:r.values.map(v=>{peak=Math.max(peak,v);return v/peak-1;})};
+ })});
+ const exposures=risk.map(r=>r.a);
+ lineChart(el("m2-cash-mix"),{label:"股票與現金比重",x:risk.map(r=>r.date.slice(0,10)),yMin:0,yMax:1,yFmt:perc,
+  band:{lo:risk.map(()=>0),hi:exposures},series:[
+   {name:"股票",color:"#2563eb",values:exposures},{name:"現金",color:"#008871",values:exposures.map(v=>1-v),dash:true}]});
+ lineChart(el("m2-risk"),{label:"年化波動率",x:risk.map(r=>r.date.slice(0,10)),yMin:0,yFmt:perc,series:[
+  {name:"目標",color:"#64748b",values:risk.map(r=>r.target),dash:true},{name:"純股票預測",color:"#b73d52",values:risk.map(r=>r.sigma_p)},
+  {name:"配置後預測",color:"#2563eb",values:risk.map(r=>r.after)},{name:"實際",color:"#008871",values:risk.map(r=>r.realized)}]});
+ el("m2-target-attainment").innerHTML=table(["策略","配置後預測達標比例","實際波動率低於或等於目標比例","實際樣本週數"],"ABCD".split("").map(s=>{
+  const all=data.risk[s], observed=all.filter(r=>Number.isFinite(r.realized));
+  return [s,perc(all.filter(r=>r.after<=r.target+1e-9).length/all.length),
+   perc(observed.filter(r=>r.realized<=r.target+1e-9).length/observed.length),observed.length];
+ }));
+}
+function validation(){
+ el("validation-baselines").innerHTML=table(["基準","Lasso − 基準","95% 下限","95% 上限"],research.baseline.map(r=>[r.baseline,fmt(r.diff),fmt(r.lo95),fmt(r.hi95)]));
+ el("validation-crash").innerHTML=table(["窗口","急跌週數","QLIKE","實現波動率"],research.crash.map(r=>[r.L,r.急跌週數,fmt(r.QLIKE),perc(r.實現波動)]));
+ el("validation-post").innerHTML=table(["窗口","Sharpe","年化報酬","年化波動","最大回撤"],research.postWindows.map(r=>[r.窗口,fmt(r.Sharpe),perc(r.年化報酬),perc(r.年化波動),perc(r.最大回撤)]));
+}
+document.querySelectorAll("[data-page]").forEach(button=>button.addEventListener("click",()=>{
+ const key=button.dataset.page;
+ document.querySelectorAll("[data-page]").forEach(b=>b===button?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+ document.querySelectorAll("[data-view]").forEach(view=>view.hidden=view.dataset.view!==key);
+ if(key==="model1") renderPred();
+ if(key==="model2"){renderPeriod();m2();}
+ window.scrollTo(0,0);
+}));
+el("overview-legend").addEventListener("click",event=>{
+ const button=event.target.closest("button[data-asset]");
+ if(!button)return;
+ const id=Number(button.dataset.asset);
+ focusAsset=focusAsset===id?-1:id;
+ overview();
+ el("overview-legend").querySelector(`[data-asset="${id}"]`).focus();
+});
+select.addEventListener("change",overview);
+el("m1-period").addEventListener("change",m1);
+el("m2-risk-strategy").addEventListener("change",m2);
+document.querySelectorAll(".period-pick button").forEach(button=>button.addEventListener("click",m2));
+let researchResize;
+window.addEventListener("resize",()=>{clearTimeout(researchResize);researchResize=setTimeout(()=>{if(!document.querySelector('[data-view="model2"]').hidden)m2();},180);});
+overview();m1();validation();
+})();
+</script>

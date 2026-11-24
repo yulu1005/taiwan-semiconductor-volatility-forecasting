@@ -1,84 +1,158 @@
-# 台灣半導體股價波動度預測
+# 第五組：台灣半導體相關股票的波動率預測與動態資產配置
 
-本專案以台灣半導體股票未來 5 個交易日的波動度為研究目標。目前可執行第 1 階段資料可行性分析，第 2 至 8 階段為待實作的骨架。
+本專案依研究計畫書 V7，以台灣半導體相關股票為研究對象。Model 1 預測個股未來五個交易日的年化波動率。Model 2 結合個股波動率、股票間相關性與波動率目標，計算股票權重與現金比例，再比較 A–D 四組策略的扣成本回測結果。
 
-## 第 1 階段資料可行性分析
+## V7 現行版本
 
-在專案目錄執行下列指令。此階段只使用 Python 標準函式庫。
+`setup.yaml` 的 `features.active` 設為 `v7`。2022–2024 年用於逐年擴張式驗證與選模。2025–2026 年資料曾被早期版本使用，V7 將這段結果列為事後評估。獨立前瞻結果由規則凍結後的紙上交易另行累積。
 
-```powershell
-python 01_feasibility_analysis.py
-```
+### 查看現有儀表板
 
-若只要核對候選股票，加入 `--pool-only` 即可離線產生股票池。使用 `--start YYYY-MM-DD --end YYYY-MM-DD` 可指定包含首尾日期的下載區間。
-
-- `results/tables/stock_pool.csv` 記錄全部 15 檔候選股的證交所產業分類、上市日、暫定研究分組、業務說明與來源。`in_scope` 空白表示最終研究資格待確認，所有候選股均接受行情品質檢查。
-- `data/raw/` 依股票及研究期間儲存每日開、高、低、收及成交股數，價格為未還原行情。預設使用 FinMind 的 `TaiwanStockPrice`（原始上市交易資訊由臺灣證券交易所提供、由 FinMind 處理），也可用 `--source twse` 直接查詢證交所。
-- `results/tables/feasibility_report.csv` 彙整實際日期範圍、缺漏交易日、缺失欄位、重複日期及異常值，並附上初篩判定。行情連線失敗會保留錯誤原因，程式會回傳非零結束碼。
-
-研究期間為 2016-11-01 至 2026-11-01，初篩要求至少 500 個有效交易日及 95% 的覆蓋率。覆蓋率以每檔股票首末行情之間的台積電（2330）行情日期為分母，上市前交易日與上市後的首尾缺口另外列出。有效日需有唯一日期、合理的開高低收及正成交量。報告另列首末有效行情日，作為各股可用研究期間。分析採證交所上市行情，起點不早於該股證交所上市日。
-
-相鄰有效行情的原始收盤價變動超過 20% 會列為人工複核。兩筆行情之間有參考交易日缺口時，另列為跨期變動。報告中的 `pass` 表示通過資料品質初篩，`review` 需要人工核對，`insufficient` 表示樣本或覆蓋不足，`download_failed` 表示下載失敗。產業資格由股票池另行審核。
-
-FinMind 以股票與已結束的查詢區間快取至 `data/raw/.price_cache/finmind/`。直接查詢證交所時，每個已結束月份成功下載並驗證後會存入 `data/raw/monthly_cache/<股票代碼>/YYYY-MM.json`，原有 `.twse_monthly_cache/` 中的有效月份也可重用。證交所每月最多嘗試三次，空資料或異常回應不寫入快取。若下載失敗，報告會標示錯誤，重跑可從已下載月份接續。
-
-### 異常資料審核
-
-執行 `python 01b_data_quality_review.py`，離線讀取已下載的行情並輸出 `results/tables/data_quality_review.csv`。明細包含原始 OHLCV、前後有效收盤、缺口交易日數及查核來源。`gap_sessions` 是兩個比較端點之間的參考交易日數，0 表示連續交易日。
-
-研究資料保留原始行情及停牌缺口。後續以經股息、除權、減資與分割調整的收盤價計算對數報酬，先抽核公司行動調整因子；僅在兩端皆有有效行情且為相鄰參考交易日時建立單日報酬。零價行情與跨停牌的報酬不填零，跨缺口的五日視窗留為缺失。調整因子可對照[證交所除權息](https://wwwc.twse.com.tw/zh/announcement/ex-right/twt49u.html)及[減資恢復買賣參考價](https://www.twse.com.tw/exchangeReport/TWTAUU?response=html)。
-
-## 調整後日報酬與五日波動率
+執行 V7 後，在該次執行的資料夾中開啟 `outputs/v7/dashboard/research_dashboard_preview.html`。PowerShell 可用 `Invoke-Item` 開啟：
 
 ```powershell
-python test_yahoo.py
-python 01c_prepare_adjusted_prices.py
-python 02_labels.py
+Invoke-Item ".\outputs\v7\dashboard\research_dashboard_preview.html"
 ```
 
-Yahoo 下載輸出 `data/external/adjusted_close.csv`、含空價格的 `yahoo_daily.csv` 及逐檔下載稽核。01c 以台積電原始行情日期為共同日曆，以各股上市日與原始 OHLCV 判定每日可用性。01c 輸出 `data/processed/adjusted_daily_returns.csv`，另有 `adjusted_price_audit.csv` 與 `adjusted_price_discrepancies.csv` 記錄分股涵蓋率所需的計數、收盤價差異、公司行動與待查日期。Yahoo Close 可能使用不同的歷史價格尺度，固定比例差異留供核對。報酬採 Yahoo Adj Close 的日比率。跨缺口或調整後單日變動超過 20% 的報酬留空。
+四頁式儀表板包含資產配置總覽、波動率預測、策略配置與績效，以及研究驗證與診斷。首頁的日期選單使用 2025–2026 事後回測的決策日。原版歷史報表仍可從 `outputs/v7/dashboard/dashboard.html` 開啟。兩份 HTML 皆內嵌資料，可直接用瀏覽器查看。
 
-02 讀取日報酬檔，對日期 t 計算 `sqrt((252 / 5) * sum(r[t+i] ** 2 for i in 1..5))`。此為未來五個交易日平方對數報酬的年化實現波動率，公式不扣除平均報酬。五個參考交易日都須有有效報酬。輸出為 `data/processed/labels.csv` 及 `results/tables/label_audit.csv`，波動率以小數表示。大於 1（100%）的值列入統計，供檢查高波動視窗。
+### 下載資料並在本機重跑
 
-Yahoo 歷史調整價格可能隨後續公司行動回溯修訂。建立 Feature 前須核對當時可得的資料版本與調整因子，Label 欄位只作為預測目標。
+使用 Python 3.12，在包含 `setup.yaml` 的資料夾開啟 PowerShell，依序執行：
 
-## 特徵稽核與樣本資格
+```powershell
+python -m venv .venv
+$python = ".\.venv\Scripts\python.exe"
+& $python -m pip install -r requirements.txt
+& $python src/01_download.py
+& $python src/01b_listing.py
+& $python reproduce_v7.py --use-current-python
+```
 
-`python 03_financial_features.py` 產出 15 項特徵及 `results/tables/feature_audit.csv`。`RSI_14` 以固定 14 筆有效價格變動的簡單平均漲跌幅計算，平盤視窗為 50。成交量與相對成交金額沿用原始行情檢查，即使該日調整後價格經補值，仍可使用通過檢查的原始成交資料。
+前兩支資料腳本需要連線至 FinMind 和證交所。若手上已有同一版本的原始資料快照，可將它放入 `data/raw/` 再直接重跑。每次執行會在 `reproductions/` 建立帶時間戳的獨立資料夾。完成後開啟該次產出的儀表板，各步驟的日誌也會保留在該資料夾。
 
-ATR 稽核的 `TR_*` 欄位以單日為單位，每個上市後交易日歸入一個原因。若同時有多項異常，依程式檢查順序記下第一項。`ATR_window_*` 欄位以 14 日 ATR 視窗為單位，區分初始歷史不足與視窗內存在無效 TR。
+若你的 Python 已裝好 `requirements.txt` 的套件，可加上 `--use-current-python`。若只想確認輸入檔案能成功複製，可加上 `--prepare-only`。
 
-`data/processed/model_dataset.csv` 是 Purging 後 Train、Validation、Test 的合併檔。Purging 前的候選列可在 `merged_feature_labels.csv` 以 `valid=1` 查詢。05 階段從 `train.csv` 擬合，使用 `validation.csv` 選擇模型與調整參數。
+### 特徵篩選與 Model 2 試驗紀錄
 
-執行 `python 04_feature_evaluation.py` 會重建完整合併檔 `merged_feature_labels.csv`、篩選後的 `model_dataset.csv`，以及 Train（2016/11/01–2021/12/31）、Validation（2022/01/01–2023/12/31）、Test（2024/01/01–2026/11/01）三份 CSV。各組以預測日期切分，並排除 Label 結束日超過組別截止日的樣本。Feature 以當日收盤後可得為研究假設，供後續配置與回測決定可交易時點。
+- `src/16_feature_selection_v7.py` 只使用 2016 年 11 月至 2020 年底的每週資料，要求標籤也在 2020 年底前結束。它將原本 17 項與組員 30 項合併，依既有的 Spearman > 0.999 規則去重，對個股 IC 的 HAC p 值做 BH 校正，再檢查 2017–2020 每年的 IC 方向，以控制 HV20 後的偏 IC 分層，並剔除高度相關項目。第一層包含 HV20 錨點和通過增量檢定者，第二層依增量 t 值的絕對值補選 8 項。市場層級特徵採每週時間序列 HAC 迴歸。兩種 GARCH 口徑的逐項明細、去重對照、入選名單與摘要位於 `outputs/v7/tables/feature_selection/`。
+- `src/07_model2_v7.py` 將驗證期 2 個窗口、4 個 α 的設定與分數寫入當次 `run_log.csv` 和 `outputs/v7/tables/model2/model2_trials.csv`。Deflated Sharpe 依該次六筆試驗計算。策略 B 共用凍結的目標波動率和成本假設，在 2025–2026 比較 20／60 日收縮窗口，結果為 `window_posthoc.csv`。該期間僅作事後評估。
 
-`dataset_audit.csv` 記錄合併與排除數量。`feature_coverage.csv` 以完整合併資料中的上市後交易日計算有效比例。`feature_correlation.csv` 與 `feature_feature_correlation.csv` 都以 Purging 後的 Train 計算 Pearson 與 Spearman。單一特徵線性迴歸只在 Train 擬合，預測限制為非負，再與直接使用 `Volatility_5` 的基準在相同 Validation 樣本比較。Test 只輸出與稽核樣本資格，未參與相關性或 MAE 評估。三份切分檔中的 Label 起訖日是切分稽核欄位，模型輸入取 15 個 Feature 欄位。
+### V7 前瞻紙上交易
 
-每個單一特徵 OLS 都將所有 Train 股票合併擬合一組係數，MAE 衡量這個跨股票共同模型的表現。若要做正式顯著性檢定，需處理同日股票之間的相關性，以及重疊五日 Label 帶來的時間相依性。
+以已成功重跑 V7 的獨立工作副本操作。進入該次執行的資料夾，沿用已安裝套件的 Python，先執行 `src/17_paper_v7.py freeze`。產出的 `paper_v7/freeze.json` 記錄模型係數、前處理參數、策略設定和程式雜湊。
 
-## 模型訓練與選擇
+```powershell
+$python = "..\..\.venv\Scripts\python.exe"
+& $python src/17_paper_v7.py refresh
+$rate = Read-Host "輸入當日臺銀一年期機動定存年率（小數，例如 1.69% 輸入 0.0169）"
+& $python src/17_paper_v7.py capture --cash-rate $rate
+& $python src/17_paper_v7.py report
+```
 
-在專案虛擬環境安裝 `requirements.txt`，執行 `python 05_model_training.py`。05 讀取已切分及 Purging 的 Train、Validation。特徵組 A 含 15 項特徵，B 移除 `Turnover`，兩組使用相同樣本。Ridge 的標準化與迴歸係數一起擬合。LightGBM 最多 500 棵樹，以 Validation 的非負預測 MAE 早停，耐心值為 40 輪。
+從凍結日期之後第一個要納入的每週決策日開始，臺北時間收盤後執行，當天在 `capture` 加上 `--decision`。遇到休市縮短的交易週，確認當天是該週最後一個交易日後，再加 `--short-week`。之後每個交易日都登記行情。程式保留當日行情及已登記的目標權重，從下一個交易日開盤依同一回測引擎模擬成交、扣成本並產生 A–D 的 NAV 與交易明細。未在當日登記的交易日應記為資料缺口，前瞻日誌拒絕事後補寫。
 
-在 Ridge 與 LightGBM 中依 Validation MAE、RMSE、試驗編號依序選擇模型，基準模型供比較。選定後以 Train＋Validation 重新擬合，LightGBM 迭代次數固定為選擇階段的最佳值。Validation 報表保留重訓前的預測。Test 保留給 06。
+首次執行 `refresh` 需要 FinMind 網路存取，並更新該工作副本的原始資料。實際機動定存年率以當日取得的數值輸入。紙上交易績效只使用凍結後登記的行情，至少 20 筆日超額報酬才顯示年化 Sharpe。
 
-06 可用 `joblib.load()` 載入 `models/final_model.joblib`，按同目錄 `model_metadata.json` 的 `features` 順序傳入特徵，並將預測下限設為 0。也可直接沿用 `05_model_training.py` 的 `predict_volatility()`。
+### V7 手動重跑與輸出
 
-## 分析流程
+在要寫入新結果的專案副本根目錄執行。表格、圖、PIT 檢查與 Model 2 報表分別位於 `outputs/v7/` 下的 `tables/`、`figures/`、`tables/pit/` 與 `tables/model2/`。
 
-| 腳本 | 用途 |
-| --- | --- |
-| `01_feasibility_analysis.py` | 檢查股價資料的涵蓋期間、完整性與可用性 |
-| `02_labels.py` | 建立波動度預測目標 |
-| `03_financial_features.py` | 建立技術指標特徵 |
-| `04_feature_evaluation.py` | 評估特徵的預測能力 |
-| `05_model_training.py` | 訓練波動度預測模型 |
-| `06_model_evaluation.py` | 評估模型預測績效 |
-| `07_portfolio_construction.py` | 依模型預測配置投資組合 |
-| `08_backtest.py` | 回測投資組合策略 |
+```bash
+python -m pip install -r requirements.txt
+python src/02_build_dataset.py         # 還原權值
+python src/03_features_labels.py       # 開盤到開盤 5 日標籤
+python src/03b_features_v2.py
+python src/features_30.py
+python src/universe.py                 # 可交易名單（250 日均額 ≥ 3.5 億、≥ 200 有效日）與每週決策日
+python src/03d_garch_oo.py             # V7 2.4.1：第 18 項特徵「開盤到開盤 GARCH」
+python src/16_feature_selection_v7.py  # 重現 18 項特徵篩選
+python src/05_model1_v7.py             # 117 個候選、三年 QLIKE 選模、事後評估與預測區間
+python src/07_model2_v7.py             # 窗口 → 目標波動率 → α → A–D 回測、DSR、敏感度
+python src/10_pit_check.py             # 截斷原始資料後重算，比較截止日前的特徵
+python src/11_figures_v7.py            # 九張圖
+python src/14_export_predictions.py    # 每週每檔的預測波動率整理成 CSV（outputs/v7/tables/volatility_predictions_weekly.csv）
+python src/12_correlation_checks.py    # 特徵相關、每週相關矩陣檢查與權重穩定性
+python src/15_build_dashboard.py       # 產生可用瀏覽器開啟的 HTML 儀表板
+python src/19_build_research_dashboard.py # 用同一次 V7 輸出產生四頁式儀表板
+```
 
-## 資料與輸出
+上述步驟使用已下載至 `data/raw/` 的資料快照。更新資料時可參閱上方的下載步驟，用 `data/raw/manifest.json` 核對資料版本。
 
-將原始股價放在 `data/raw/`，清理後的資料放在 `data/processed/`。特徵與訓練完成的模型分別存放於 `features/` 與 `models/`，圖表與表格則分別放在 `results/figures/` 與 `results/tables/`。
+| 程式 | 做什麼 | 主要輸出 |
+|---|---|---|
+| `src/03d_garch_oo.py` | 開盤到開盤 GARCH(1,1)，每 63 日擴張視窗重估、至少 250 個報酬 | `data/processed/features_garch_oo.parquet`、`outputs/v7/tables/garch_oo_fits.csv` |
+| `src/05_model1_v7.py` | 4 個基準＋Ridge／Lasso／ElasticNet／LightGBM，共 117 個候選 | `outputs/v7/tables/model1_*.csv`、`selected_configs.csv` |
+| `src/model2_v7.py` | Model 2 的數學：收縮相關、風險預算求解（凸問題→超過 30% 改 SLSQP）、波動目標、Nₜ<4 例外 | （被 07 呼叫） |
+| `src/07_model2_v7.py` | V7 5.5 → 7.5 → 4.4 的選擇程序與 A–D 回測（隔日開盤成交、手續費、證交稅、滑價、臺銀定存利率） | `outputs/v7/tables/model2/` |
+| `src/10_pit_check.py` | 預設截斷四個截止日，重算並比較截止日前的特徵 | `outputs/v7/tables/pit/` |
+| `src/11_figures_v7.py` | 結果圖 | `outputs/v7/figures/v7_fig*.png` |
+| `src/12_correlation_checks.py` | 特徵相關、相關矩陣數值檢查、權重穩定性 | `outputs/v7/tables/correlation/`、`v7_fig10`、`v7_fig11` |
 
-`config.py` 集中定義專案路徑與研究參數。`requirements.txt` 可在實作後續階段時補上所需套件。
+V7 回測中涉及缺值、例外週、停牌與模型重訓頻率的實作決定，列在 `src/07_model2_v7.py` 開頭。
+
+## 舊版研究紀錄
+
+以下列出早期版本和原研究工作區的歷史輸出位置。GitHub checkout 包含程式來源。重現 V7 請使用上方步驟。
+
+| 版本 | 特徵 | 驗證期 | 封存期 | 結果位置 |
+|---|---|---|---|---|
+| **v1** | 文件原始 15 項 | 已跑 | **已正式執行一次（唯一一次）** | `outputs/tables`、`outputs/figures`、`outputs/MLQT_group5_results.xlsx` |
+| **v2** | 第二版 17 項（`notebooks/03b` 只用 2016-11～2020 篩選） | 已跑 | **不重跑**：封存期已用過，v2 若在封存期評估必須標註為事後評估 | `outputs/v2/` |
+| **v3** | 沿用 v2 的 17 項特徵，加上當時提案的交易規則 | 保留模型驗證結果及回測程式 | 如使用該期間，列為事後評估 | `outputs/v3/`、規格見 `docs/strategy_v3.md` |
+| **v4** | 從 17 項與 30 項候選中篩出 18 項，使用原版 GARCH 特徵 | 保留歷史驗證結果 | 如使用該期間，列為事後評估 | `outputs/v4/` |
+
+v1 vs v2 驗證期比較：`outputs/v2/tables/v1_vs_v2_validation.xlsx`、`outputs/v2/figures/v1_vs_v2_validation.png`。
+
+### 舊版程式入口
+
+下列命令供查閱各舊版的入口。各版本使用對應的設定與輸出，請依研究版本選擇所需步驟。
+
+```bash
+pip install -r requirements.txt
+python src/01_download.py        # 下載 FinMind 原始資料（免費版有次數限制，程式會自動等待重試）
+python src/01b_listing.py        # 證交所上市日期與產業別、手動分割事件（0050 2025-06-18 一拆四）
+python src/02_build_dataset.py   # 清理、自行還原權值、資料品質報告
+python src/03_features_labels.py # v1 的 15 項特徵（10/20/40 日）與開盤到開盤 5 日波動標籤
+python src/03b_features_v2.py    # v2 候選特徵 27 項（含每檔 GARCH 走勢前進估計、行事曆）
+python src/04_triage.py          # v1 特徵五道關卡（只用 2016-11～2021 訓練期）
+python src/05_validate.py        # 三個驗證年度 walk-forward、參數選擇、成對比較、SHAP（依 features.active 決定特徵組）
+python src/06_backtest_validation.py  # 驗證期回測、變體、成本掃描
+python src/06b_compare_versions.py    # （v2 時）v1 vs v2 比較
+python src/universe.py           # （v3）時點正確的可交易股票池（250 日均額 ≥ 3.5 億）與每週決策日
+python src/05_validate_v3.py     # （v3）115 個候選模型、QLIKE 選模、兩種風險等級規則比較（不交易）
+python src/06_backtest_v3.py     # （v3）驗證期回測——已寫好，尚未執行
+python src/07_holdout.py         # 封存測試：只能執行一次（outputs/HOLDOUT_USED.txt 存在時會拒絕執行；v1 已用過）
+python src/08_report.py          # v1 總表、六張圖、風險、預測區間、DSR
+python src/09_excel.py           # v1 表格彙整成 Excel
+```
+
+`notebooks/` 依課程範本（ETF case study 01–05）做資料與特徵檢查，見 `notebooks/README.md`。
+資料版本可查 `data/raw/manifest.json`。比較不同執行結果時，同時核對資料快照、程式版本及套件版本。
+
+## 設定與研究帳本
+
+- `setup.yaml`：資料期間、特徵組、驗證與模型參數，以及各版本相關設定。
+- `run_log.csv`：研究帳本（每次執行的 git 版本、資料快照、特徵組、評估區間、指標、決策）
+- `run_log_before_fix.csv`：帳本修正前的原檔（見下方「修正紀錄」）
+
+## 舊版修正紀錄（2026-11-17）
+1. **驗證期碰到封存期**：2024-12-25 決策日的 15 筆驗證樣本，標籤在 2025/1 才結束。已改為依「標籤結束日」切（`models.split`）。
+   重算後 v1 選出的參數完全相同，因此 v1 的回測與封存結果不受影響。
+2. **研究帳本欄位錯位**：早期 append 時欄位沒有對齊，回看期、回測、封存期紀錄的數值落在錯的欄位，第一次驗證期回測也被重複記錄。
+   以 `src/tools_fix_run_log.py` 依各類紀錄的原始欄位順序重建（原檔保留為 `run_log_before_fix.csv`），`log_runs` 改為依欄名對齊。
+3. **Deflated Sharpe 的試驗數**：原本誤把封存期紀錄算成試驗（N=69），改為只算封存測試執行之前的試驗（N=57）；DSR 幾乎不變。
+
+## 舊版實作決定（V1–V3）
+1. 資料來源 FinMind（TWSE/TPEx 日成交）；FinMind 免費版沒有還原價，自行以除權息與減資參考價回溯調整。
+2. 5222、6770、8028 只使用證交所上市日之後的資料（之前為興櫃，無漲跌幅限制）。
+3. 訓練樣本使用所有交易日（標籤重疊，以 purge 處理）；評估只用每 5 日的決策日（時間上不重疊）。
+4. Ridge alpha 依老師要求擴為 0.01～10000（含簡報的 0.1/1/10）；LightGBM 使用 MAE 損失、簡報的 8 組參數，未用 early stopping。
+5. 股利處理：持有期間以還原價評價（等同股利再投入同一股票，最多 5 日），成交用原始開盤價、整張。
+6. 主策略事先指定為「驗證 MAE 最低的模型（LightGBM）＋股票等權」，在看回測結果之前決定。
+7. 本金採簡報第 11 頁的 3 億元；備註中的 100 萬元列為變體（整張限制下多數股票買不到）。
+8. v2 的股票池規則與 v1 相同；v2 特徵的缺值（新股前 60 天、GARCH 暖身期）在 Ridge 用訓練期中位數補，LightGBM 直接處理缺值。
+9. v2 有兩項特徵用到超過 20 日的歷史（60 日波動、GARCH），與文件「過去 20 個交易日」不同，需在報告說明。
+10. v3 的選模規則原文是「QLIKE 差距 1% 內選較簡單者」，第一次執行時 Lasso 與 ElasticNet 同分，原文沒有定義跨家族誰較簡單；
+    補寫為「先比超參數個數，再比懲罰強度／樹數」（`setup.yaml` 的 `v3.models.tie_break`）。這個補充只用到驗證期資訊。
+11. v3 的模型用所有合格股票訓練（學「波動怎麼變」），只有交易、門檻與評估限制在可交易股票。
